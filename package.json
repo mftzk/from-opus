@@ -1,0 +1,13 @@
+{
+  "name": "from-opus",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A calm WebGPU ambient visualizer: curl-noise particle flow with trails and bloom.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

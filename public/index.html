@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>from-opus</title>
+<style>
+  :root {
+    --ink: rgba(233, 238, 246, 0.82);
+    --ink-dim: rgba(233, 238, 246, 0.42);
+    --panel-bg: rgba(12, 16, 24, 0.42);
+    --panel-line: rgba(255, 255, 255, 0.08);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #05070c;
+    overflow: hidden;
+    font: 400 13px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #scene {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    opacity: 0;
+    transition: opacity 1.6s ease;
+  }
+  body.ready #scene { opacity: 1; }
+
+  /* ------------------------------------------------------------- panel */
+
+  #panel {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 232px;
+    padding: 18px 18px 16px;
+    border-radius: 16px;
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-line);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+    transition: opacity .7s ease, transform .55s cubic-bezier(.22,.61,.36,1);
+    z-index: 3;
+  }
+  body.idle #panel { opacity: .32; }
+  body.ui-hidden #panel {
+    opacity: 0;
+    transform: translateY(-10px) scale(.98);
+    pointer-events: none;
+  }
+
+  .row { margin-bottom: 14px; }
+  .row:last-of-type { margin-bottom: 0; }
+
+  label {
+    display: block;
+    font-size: 10.5px;
+    letter-spacing: .10em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    margin-bottom: 7px;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 3px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.14);
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    background: rgba(240, 246, 255, 0.9);
+    box-shadow: 0 0 12px rgba(170, 205, 255, 0.45);
+    cursor: pointer;
+    transition: transform .18s ease;
+  }
+  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.18); }
+  input[type=range]::-moz-range-thumb {
+    width: 13px; height: 13px; border: none;
+    border-radius: 50%;
+    background: rgba(240, 246, 255, 0.9);
+    cursor: pointer;
+  }
+
+  #palettes {
+    display: flex;
+    gap: 7px;
+    margin-top: 2px;
+  }
+  .swatch {
+    flex: 1;
+    height: 22px;
+    border-radius: 7px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    padding: 0;
+    cursor: pointer;
+    opacity: .55;
+    transition: opacity .25s ease, transform .25s ease, box-shadow .25s ease;
+  }
+  .swatch:hover { opacity: .85; transform: translateY(-1px); }
+  .swatch.active {
+    opacity: 1;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.55), 0 4px 14px rgba(0, 0, 0, .4);
+  }
+
+  #toggle {
+    position: fixed;
+    top: 26px;
+    right: 268px;
+    width: 9px; height: 9px;
+    padding: 0;
+    border-radius: 50%;
+    border: none;
+    background: rgba(235, 242, 255, 0.30);
+    cursor: pointer;
+    transition: background .3s ease, opacity .7s ease, right .55s cubic-bezier(.22,.61,.36,1);
+    z-index: 4;
+  }
+  #toggle:hover { background: rgba(235, 242, 255, 0.75); }
+  body.idle #toggle { opacity: .25; }
+  body.ui-hidden #toggle { right: 24px; }
+
+  .hint {
+    margin: 14px 0 0;
+    font-size: 10px;
+    letter-spacing: .06em;
+    color: rgba(233, 238, 246, 0.24);
+    text-align: right;
+  }
+
+  /* -------------------------------------------------------- fallback */
+
+  #unsupported {
+    position: fixed;
+    inset: 0;
+    display: none;
+    place-items: center;
+    text-align: center;
+    padding: 32px;
+    background: radial-gradient(120% 90% at 50% 40%, #0c1220 0%, #05070c 70%);
+    z-index: 9;
+  }
+  #unsupported.visible { display: grid; }
+  #unsupported p {
+    max-width: 26em;
+    color: rgba(233, 238, 246, 0.55);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  @media (max-width: 640px) {
+    #panel { top: auto; bottom: 16px; right: 16px; left: 16px; width: auto; }
+    #toggle { top: 18px; right: 18px; }
+    body.ui-hidden #panel { transform: translateY(10px) scale(.98); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #scene, #panel, #toggle, .swatch { transition-duration: .01ms; }
+  }
+</style>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <button id="toggle" type="button" aria-label="Hide or show controls"></button>
+
+  <aside id="panel">
+    <div class="row">
+      <label for="flow">Flow speed</label>
+      <input id="flow" type="range" min="0" max="100" value="55">
+    </div>
+    <div class="row">
+      <label for="glow">Glow</label>
+      <input id="glow" type="range" min="0" max="100" value="55">
+    </div>
+    <div class="row">
+      <label for="trail">Trail length</label>
+      <input id="trail" type="range" min="0" max="100" value="45">
+    </div>
+    <div class="row">
+      <label for="interaction">Interaction</label>
+      <input id="interaction" type="range" min="0" max="100" value="50">
+    </div>
+    <div class="row">
+      <label for="density">Density</label>
+      <input id="density" type="range" min="0" max="100" value="50">
+    </div>
+    <div class="row">
+      <label>Palette</label>
+      <div id="palettes"></div>
+    </div>
+    <p class="hint">H to hide</p>
+  </aside>
+
+  <div id="unsupported"><p></p></div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
